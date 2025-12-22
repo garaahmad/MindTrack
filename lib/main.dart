@@ -5,7 +5,7 @@ import 'onboarding_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Firebase disabled for local testing
-  Gemini.init(apiKey: 'AIzaSyDdmXKgnTM1XYmTadSAs4lDYzvN9sBgg8Y');
+  Gemini.init(apiKey: 'APY--- Don/t use my API');
   runApp(const MyApp());
 }
 
