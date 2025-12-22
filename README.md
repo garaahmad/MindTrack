@@ -8,6 +8,14 @@
 
 ---
 
+## 📥 Download
+
+Ready to track your mood? Download the latest Android version here:
+
+[**📲 Download MindTrack APK**](https://drive.google.com/file/d/1jewAg01KfBquNlniepsAAusCaAVdUU2d/view?usp=drive_link)
+
+---
+
 ## ✨ Key Features
 
 ### 🤖 AI Sentiment Analysis
