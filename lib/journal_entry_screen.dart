@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+import 'hugging_face_service.dart';
 import 'journal_service.dart';
+import 'theme_service.dart';
 
 class JournalEntryScreen extends StatefulWidget {
   const JournalEntryScreen({Key? key}) : super(key: key);
@@ -13,10 +14,8 @@ class JournalEntryScreen extends StatefulWidget {
 }
 
 class _JournalEntryScreenState extends State<JournalEntryScreen> {
-  final TextEditingController _controller = TextEditingController(
-    text:
-        "I've been feeling incredibly productive today! The morning started with a great workout, and I managed to clear my inbox by noon. It feels like things are finally falling into place.\n\nI think the new routine is really working for me.",
-  );
+  final ThemeService _themeService = ThemeService();
+  final TextEditingController _controller = TextEditingController();
 
   bool _isAnalyzing = false;
   String _moodTitle = 'Decoding...';
@@ -31,46 +30,17 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
     });
 
     try {
-      final gemini = Gemini.instance;
-      final prompt =
-          """
-Analyze the following journal entry and provide:
-1. A short mood title (2-4 words) that captures the essence (e.g., "Productive & Calm").
-2. A single concise sentence of AI insight/advice.
+      final hfService = HuggingFaceService();
+      final result = await hfService.analyzeEntry(_controller.text);
 
-Format your response exactly like this:
-MOOD: [Title]
-INSIGHT: [Sentence]
-SCORE: [Number between 0 and 10, where 0 is very sad/negative and 10 is very happy/positive]
-
-Journal Entry:
-${_controller.text}
-""";
-
-      final response = await gemini.text(prompt);
-      final output = response?.output ?? "";
-
-      if (output.contains('MOOD:') && output.contains('INSIGHT:')) {
-        _moodTitle = output.split('MOOD:')[1].split('INSIGHT:')[0].trim();
-        _aiInsight = output.split('INSIGHT:')[1].split('SCORE:')[0].trim();
-
-        if (output.contains('SCORE:')) {
-          String scoreStr = output.split('SCORE:')[1].trim();
-          double? score = double.tryParse(scoreStr);
-          if (score != null) {
-            _sentimentScore = score / 10.0; // Normalize to 0.0 - 1.0
-          }
-        }
-      } else {
-        _moodTitle = "Mindful Reflection";
-        _aiInsight = output.isNotEmpty
-            ? output
-            : "Thank you for sharing your thoughts.";
-      }
+      _moodTitle = result["mood"];
+      _aiInsight = result["insight"];
+      _sentimentScore = result["score"];
     } catch (e) {
-      debugPrint("Gemini Error: $e");
+      debugPrint("HF Error: $e");
       _moodTitle = "Connection Error";
-      _aiInsight = "Error details: ${e.toString().split('\n').first}";
+      _aiInsight =
+          "I'm having a little trouble connecting. Please check your settings.";
     } finally {
       if (mounted) {
         setState(() {
@@ -97,25 +67,18 @@ ${_controller.text}
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF13EC5B);
-    const backgroundLight = Color(0xFFF6F8F6);
-    const backgroundDark = Color(0xFF102216);
-
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDarkMode ? backgroundDark : backgroundLight;
-    final textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
-    final secondaryTextColor = isDarkMode
-        ? const Color(0xFF94A3B8)
-        : const Color(0xFF475569);
-    final inputBgColor = isDarkMode
-        ? const Color(0xFF1A2C20).withOpacity(0.6)
-        : Colors.white;
+    final primaryColor = _themeService.primaryColor;
+    final backgroundColor = _themeService.backgroundColor;
+    final textColor = _themeService.textColor;
+    final textColorSecondary = _themeService.textColorSecondary;
+    final surfaceColor = _themeService.surfaceColor;
+    final isDarkMode = _themeService.isDark;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // Background Gradient Decoration
+          // Background Gradient decoration
           Positioned(
             top: -100,
             right: -100,
@@ -145,8 +108,11 @@ ${_controller.text}
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                        color: textColor,
+                        icon: Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 20,
+                          color: textColor,
+                        ),
                       ),
                       Expanded(
                         child: Text(
@@ -161,8 +127,11 @@ ${_controller.text}
                       ),
                       IconButton(
                         onPressed: () {},
-                        icon: const Icon(Icons.more_horiz, size: 24),
-                        color: textColor,
+                        icon: Icon(
+                          Icons.more_horiz,
+                          size: 24,
+                          color: textColor,
+                        ),
                       ),
                     ],
                   ),
@@ -176,14 +145,9 @@ ${_controller.text}
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 24),
-                        // Date & Time Header
                         Row(
                           children: [
-                            const Icon(
-                              Icons.schedule,
-                              size: 14,
-                              color: primaryColor,
-                            ),
+                            Icon(Icons.schedule, size: 14, color: primaryColor),
                             const SizedBox(width: 8),
                             Text(
                               'DAILY CHECK-IN',
@@ -211,7 +175,7 @@ ${_controller.text}
                           style: GoogleFonts.manrope(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
-                            color: secondaryTextColor,
+                            color: textColorSecondary,
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -221,8 +185,11 @@ ${_controller.text}
                           constraints: const BoxConstraints(minHeight: 320),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: inputBgColor,
+                              color: surfaceColor,
                               borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: textColor.withOpacity(0.05),
+                              ),
                               boxShadow: isDarkMode
                                   ? []
                                   : [
@@ -242,7 +209,7 @@ ${_controller.text}
                                     hintText:
                                         'How are you feeling today? Start writing here...',
                                     hintStyle: GoogleFonts.manrope(
-                                      color: secondaryTextColor.withOpacity(
+                                      color: textColorSecondary.withOpacity(
                                         0.5,
                                       ),
                                       fontSize: 18,
@@ -253,12 +220,10 @@ ${_controller.text}
                                   style: GoogleFonts.manrope(
                                     fontSize: 18,
                                     height: 1.6,
-                                    color: isDarkMode
-                                        ? Colors.white.withOpacity(0.9)
-                                        : const Color(0xFF1E293B),
+                                    color: textColor,
                                   ),
                                 ),
-                                const Positioned(
+                                Positioned(
                                   bottom: 20,
                                   right: 20,
                                   child: Icon(
@@ -283,11 +248,7 @@ ${_controller.text}
                   decoration: BoxDecoration(
                     color: backgroundColor,
                     border: Border(
-                      top: BorderSide(
-                        color: isDarkMode
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.black.withOpacity(0.05),
-                      ),
+                      top: BorderSide(color: textColor.withOpacity(0.05)),
                     ),
                   ),
                   child: Column(
@@ -300,7 +261,7 @@ ${_controller.text}
                         style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: secondaryTextColor,
+                          color: textColorSecondary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -326,20 +287,24 @@ ${_controller.text}
                           ),
                           child: Center(
                             child: _isAnalyzing
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 24,
                                     width: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 3,
-                                      color: backgroundDark,
+                                      color: isDarkMode
+                                          ? Colors.black
+                                          : Colors.white,
                                     ),
                                   )
                                 : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.psychology,
-                                        color: backgroundDark,
+                                        color: isDarkMode
+                                            ? Colors.black
+                                            : Colors.white,
                                         size: 24,
                                       ),
                                       const SizedBox(width: 8),
@@ -348,7 +313,9 @@ ${_controller.text}
                                         style: GoogleFonts.manrope(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800,
-                                          color: backgroundDark,
+                                          color: isDarkMode
+                                              ? Colors.black
+                                              : Colors.white,
                                         ),
                                       ),
                                     ],
@@ -390,14 +357,19 @@ class AnalysisResultSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF13EC5B);
-    const backgroundDark = Color(0xFF102216);
-    const surfaceDark = Color(0xFF1C2B21);
+    final themeService = ThemeService();
+    final primaryColor = themeService.primaryColor;
+    final backgroundColor = themeService.backgroundColor;
+    final surfaceColor = themeService.surfaceColor;
+    final textColor = themeService.textColor;
+    final textColorSecondary = themeService.textColorSecondary;
+    final isDarkMode = themeService.isDark;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: backgroundDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(color: textColor.withOpacity(0.05)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
@@ -407,7 +379,7 @@ class AnalysisResultSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: textColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -418,11 +390,7 @@ class AnalysisResultSheet extends StatelessWidget {
               color: primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: primaryColor,
-              size: 48,
-            ),
+            child: Icon(Icons.auto_awesome, color: primaryColor, size: 48),
           ),
           const SizedBox(height: 24),
           Text(
@@ -430,16 +398,13 @@ class AnalysisResultSheet extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'Your mood today is',
-            style: GoogleFonts.manrope(
-              fontSize: 16,
-              color: const Color(0xFF94A3B8),
-            ),
+            style: GoogleFonts.manrope(fontSize: 16, color: textColorSecondary),
           ),
           const SizedBox(height: 8),
           Text(
@@ -455,23 +420,23 @@ class AnalysisResultSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: surfaceDark,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: textColor.withOpacity(0.05)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.lightbulb, color: primaryColor, size: 20),
+                    Icon(Icons.lightbulb, color: primaryColor, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'AI Insight',
                       style: GoogleFonts.manrope(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                     ),
                   ],
@@ -482,7 +447,7 @@ class AnalysisResultSheet extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 14,
                     height: 1.5,
-                    color: const Color(0xFF94A3B8),
+                    color: textColorSecondary,
                   ),
                 ),
               ],
@@ -491,7 +456,6 @@ class AnalysisResultSheet extends StatelessWidget {
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
-              // Save to Journal Service
               final now = DateTime.now();
               JournalService().addEntry(
                 JournalEntry(
@@ -504,14 +468,12 @@ class AnalysisResultSheet extends StatelessWidget {
                   timestamp: now,
                 ),
               );
-
-              // Close sheet and the screen to return to History
-              Navigator.pop(context); // Close sheet
-              Navigator.pop(context); // Close JournalEntryScreen
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,
-              foregroundColor: backgroundDark,
+              foregroundColor: isDarkMode ? Colors.black : Colors.white,
               minimumSize: const Size(double.infinity, 56),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),

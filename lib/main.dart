@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'onboarding_screen.dart';
+import 'theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase disabled for local testing
+
+  // Initialize ThemeService
+  final themeService = ThemeService();
+  await themeService.init();
+
+  // Gemini init (existing)
   Gemini.init(apiKey: 'API--- Don/t use my API');
+
   runApp(const MyApp());
 }
 
@@ -14,23 +21,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MindTrack',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF6F8F6),
-        primaryColor: const Color(0xFF13EC5B),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF102216),
-        primaryColor: const Color(0xFF13EC5B),
-        useMaterial3: true,
-      ),
-      themeMode: ThemeMode.dark,
-      home: const OnboardingScreen(),
+    final themeService = ThemeService();
+
+    return ValueListenableBuilder<AppThemeMode>(
+      valueListenable: themeService.themeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'MindTrack',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            brightness: themeService.isDark
+                ? Brightness.dark
+                : Brightness.light,
+            scaffoldBackgroundColor: themeService.backgroundColor,
+            primaryColor: themeService.primaryColor,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: themeService.primaryColor,
+              brightness: themeService.isDark
+                  ? Brightness.dark
+                  : Brightness.light,
+              background: themeService.backgroundColor,
+              surface: themeService.surfaceColor,
+            ),
+            useMaterial3: true,
+          ),
+          themeMode: themeService.isDark ? ThemeMode.dark : ThemeMode.light,
+          home: const OnboardingScreen(),
+        );
+      },
     );
   }
 }

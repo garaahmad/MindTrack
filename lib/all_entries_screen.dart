@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'journal_service.dart';
+import 'theme_service.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
 
@@ -9,15 +10,17 @@ class AllEntriesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF13EC5B);
-    const backgroundDark = Color(0xFF102216);
-    const surfaceDark = Color(0xFF1C271F);
-    const textColorSecondary = Color(0xFF9DB9A6);
+    final themeService = ThemeService();
+    final primaryColor = themeService.primaryColor;
+    final backgroundColor = themeService.backgroundColor;
+    final surfaceColor = themeService.surfaceColor;
+    final textColor = themeService.textColor;
+    final textColorSecondary = themeService.textColorSecondary;
 
     final entries = JournalService().entries;
 
     return Scaffold(
-      backgroundColor: backgroundDark,
+      backgroundColor: backgroundColor,
       body: Stack(
         children: [
           // Background Glow
@@ -51,9 +54,9 @@ class AllEntriesScreen extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_ios_new,
-                          color: Colors.white,
+                          color: textColor,
                           size: 20,
                         ),
                       ),
@@ -63,7 +66,7 @@ class AllEntriesScreen extends StatelessWidget {
                         style: GoogleFonts.manrope(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: textColor,
                         ),
                       ),
                     ],
@@ -87,7 +90,8 @@ class AllEntriesScreen extends StatelessWidget {
                           DateFormat('dd').format(entry.timestamp),
                           Icons.auto_awesome,
                           primaryColor,
-                          surfaceDark,
+                          surfaceColor,
+                          textColor,
                           textColorSecondary,
                         ),
                       );
@@ -109,15 +113,16 @@ class AllEntriesScreen extends StatelessWidget {
     String day,
     IconData moodIcon,
     Color moodColor,
-    Color surfaceDark,
+    Color surfaceColor,
+    Color textColor,
     Color textColorSecondary,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: surfaceDark,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: textColor.withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -136,13 +141,13 @@ class AllEntriesScreen extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: textColor,
                 ),
               ),
             ],
           ),
           const SizedBox(width: 16),
-          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
+          Container(width: 1, height: 40, color: textColor.withOpacity(0.1)),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -156,7 +161,7 @@ class AllEntriesScreen extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                     ),
                     Icon(moodIcon, size: 18, color: moodColor),

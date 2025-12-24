@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'theme_service.dart';
 import 'dart:ui';
 
 class ExploreScreen extends StatelessWidget {
@@ -7,13 +8,16 @@ class ExploreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF13EC5B);
-    const backgroundDark = Color(0xFF102216);
-    const surfaceDark = Color(0xFF1C271F);
-    const textColorSecondary = Color(0xFF9DB9A6);
+    final themeService = ThemeService();
+    final primaryColor = themeService.primaryColor;
+    final backgroundColor = themeService.backgroundColor;
+    final surfaceColor = themeService.surfaceColor;
+    final textColor = themeService.textColor;
+    final textColorSecondary = themeService.textColorSecondary;
+    final isDark = themeService.isDark;
 
     return Scaffold(
-      backgroundColor: backgroundDark,
+      backgroundColor: backgroundColor,
       body: Stack(
         children: [
           // Background Glow
@@ -52,9 +56,9 @@ class ExploreScreen extends StatelessWidget {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_ios_new,
-                            color: Colors.white,
+                            color: textColor,
                             size: 20,
                           ),
                         ),
@@ -63,7 +67,7 @@ class ExploreScreen extends StatelessWidget {
                           style: GoogleFonts.manrope(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: textColor,
                           ),
                         ),
                         const SizedBox(width: 48), // Spacer
@@ -78,11 +82,9 @@ class ExploreScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       height: 56,
                       decoration: BoxDecoration(
-                        color: surfaceDark,
+                        color: surfaceColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.05),
-                        ),
+                        border: Border.all(color: textColor.withOpacity(0.05)),
                       ),
                       child: Row(
                         children: [
@@ -109,7 +111,7 @@ class ExploreScreen extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                     ),
                   ),
@@ -125,25 +127,29 @@ class ExploreScreen extends StatelessWidget {
                           Icons.self_improvement,
                           'Mindfulness',
                           Colors.purpleAccent,
-                          surfaceDark,
+                          surfaceColor,
+                          textColor,
                         ),
                         _buildCategory(
                           Icons.nights_stay,
                           'Sleep',
                           Colors.indigoAccent,
-                          surfaceDark,
+                          surfaceColor,
+                          textColor,
                         ),
                         _buildCategory(
                           Icons.psychology,
                           'Anxiety',
                           Colors.orangeAccent,
-                          surfaceDark,
+                          surfaceColor,
+                          textColor,
                         ),
                         _buildCategory(
                           Icons.bolt,
                           'Energy',
                           primaryColor,
-                          surfaceDark,
+                          surfaceColor,
+                          textColor,
                         ),
                       ],
                     ),
@@ -158,7 +164,7 @@ class ExploreScreen extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                     ),
                   ),
@@ -208,7 +214,7 @@ class ExploreScreen extends StatelessWidget {
                                 style: GoogleFonts.manrope(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                                  color: isDark ? Colors.black : Colors.white,
                                 ),
                               ),
                             ),
@@ -243,7 +249,7 @@ class ExploreScreen extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                     ),
                   ),
@@ -253,7 +259,8 @@ class ExploreScreen extends StatelessWidget {
                     'How 5 minutes a day can transform your life.',
                     '10 min read',
                     'https://images.unsplash.com/photo-1517842645767-c639042777db?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-                    surfaceDark,
+                    surfaceColor,
+                    textColor,
                     textColorSecondary,
                   ),
                   _buildArticleItem(
@@ -261,7 +268,8 @@ class ExploreScreen extends StatelessWidget {
                     'A guide to identifying and naming your feelings.',
                     '6 min read',
                     'https://images.unsplash.com/photo-1507413247413-11ef8c0a8570?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-                    surfaceDark,
+                    surfaceColor,
+                    textColor,
                     textColorSecondary,
                   ),
                 ],
@@ -277,7 +285,8 @@ class ExploreScreen extends StatelessWidget {
     IconData icon,
     String label,
     Color color,
-    Color surfaceDark,
+    Color surfaceColor,
+    Color textColor,
   ) {
     return Padding(
       padding: const EdgeInsets.only(right: 16),
@@ -286,7 +295,7 @@ class ExploreScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: surfaceDark,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: color.withOpacity(0.2)),
             ),
@@ -298,7 +307,7 @@ class ExploreScreen extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.white70,
+              color: textColor.withOpacity(0.7),
             ),
           ),
         ],
@@ -311,7 +320,8 @@ class ExploreScreen extends StatelessWidget {
     String subtitle,
     String time,
     String imageUrl,
-    Color surfaceDark,
+    Color surfaceColor,
+    Color textColor,
     Color textColorSecondary,
   ) {
     return Padding(
@@ -319,9 +329,9 @@ class ExploreScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: surfaceDark,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: textColor.withOpacity(0.05)),
         ),
         child: Row(
           children: [
@@ -346,7 +356,7 @@ class ExploreScreen extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 4),

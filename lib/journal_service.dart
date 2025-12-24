@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class JournalEntry {
   final String id;
   final String date;
@@ -23,34 +25,26 @@ class JournalEntry {
 class JournalService {
   static final JournalService _instance = JournalService._internal();
   factory JournalService() => _instance;
+
   JournalService._internal() {
-    // Add some dummy data for testing
+    // Better dummy data for testing
     _localEntries = [
       JournalEntry(
         date: 'Dec 22, 2025',
         time: '10:00 AM',
-        content: 'Had a great start to the day with some meditation.',
-        mood: 'Calm & Focused',
-        insight: 'Meditation is key to your morning routine.',
+        content: 'Productive day, feels good.',
+        mood: 'Accomplished',
+        insight: 'Keep this momentum.',
         sentimentScore: 0.8,
-        timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+        timestamp: DateTime.now().subtract(const Duration(days: 1)),
       ),
       JournalEntry(
         date: 'Dec 21, 2025',
         time: '08:30 PM',
-        content: 'Feeling a bit tired but satisfied with the work done.',
-        mood: 'Productive but Tired',
-        insight: 'Rest is just as important as work.',
-        sentimentScore: 0.6,
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      JournalEntry(
-        date: 'Dec 20, 2025',
-        time: '02:15 PM',
-        content: 'Great session with the team today!',
-        mood: 'Energetic',
-        insight: 'Collaboration brings out the best in you.',
-        sentimentScore: 0.9,
+        content: 'A bit slow today.',
+        mood: 'Reflective',
+        insight: 'It is okay to rest.',
+        sentimentScore: 0.5,
         timestamp: DateTime.now().subtract(const Duration(days: 2)),
       ),
     ];
@@ -59,10 +53,7 @@ class JournalService {
   List<JournalEntry> _localEntries = [];
   List<JournalEntry> get entries => List.unmodifiable(_localEntries);
 
-  Future<void> syncEntries() async {
-    // No-op for local test mode
-    return;
-  }
+  Future<void> syncEntries() async => null;
 
   Future<void> addEntry(JournalEntry entry) async {
     _localEntries.insert(0, entry);
@@ -83,15 +74,6 @@ class JournalService {
     return daySum / dayEntries.length;
   }
 
-  double getAverageMoodScore() {
-    if (_localEntries.isEmpty) return 0.5;
-    double sum = 0;
-    for (var entry in _localEntries) {
-      sum += entry.sentimentScore;
-    }
-    return sum / _localEntries.length;
-  }
-
   List<double> getWeeklyScores() {
     List<double> weeklyScores = [];
     DateTime now = DateTime.now();
@@ -103,21 +85,30 @@ class JournalService {
         now.day,
       ).subtract(Duration(days: i));
       double? score = getMoodForDay(day);
-      weeklyScores.add(
-        score ?? (weeklyScores.isEmpty ? 0.5 : weeklyScores.last),
-      );
+
+      // If no score, use 0.5 as middle ground baseline
+      weeklyScores.add(score ?? 0.5);
     }
     return weeklyScores;
   }
 
   double getPercentageChange() {
-    List<double> weeklyScores = getWeeklyScores();
-    if (weeklyScores.length < 2) return 0;
+    List<double> scores = getWeeklyScores();
+    if (scores.length < 2) return 0;
 
-    double current = weeklyScores.last;
-    double previous = weeklyScores[weeklyScores.length - 2];
+    double today = scores.last;
+    double baseline = 0.5; // Use 0.5 as the "neutral" baseline for comparison
 
-    if (previous == 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
+    // Find average of the previous 6 days
+    double previousSum = 0;
+    for (int i = 0; i < 6; i++) previousSum += scores[i];
+    double previousAvg = previousSum / 6;
+
+    // Calculate change from the weekly average
+    if (previousAvg == 0) return 0;
+    double change = ((today - previousAvg) / previousAvg) * 100;
+
+    // Clamp to avoid crazy numbers from small denominators
+    return change.clamp(-100, 100);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'theme_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -9,6 +10,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final ThemeService _themeService = ThemeService();
   bool _autoTheme = true;
   bool _sentimentAnalysis = true;
   double _fontSize = 16;
@@ -16,17 +18,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF13EC5B);
-    const backgroundDark = Color(0xFF102216);
-    const surfaceDark = Color(0xFF1C2B21);
-    const textColorSecondary = Color(0xFF94A3B8);
-
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDarkMode
-        ? backgroundDark
-        : const Color(0xFFF6F8F6);
-    final cardColor = isDarkMode ? surfaceDark : Colors.white;
-    final textColor = isDarkMode ? Colors.white : const Color(0xFF0F172A);
+    final primaryColor = _themeService.primaryColor;
+    final backgroundColor = _themeService.backgroundColor;
+    final cardColor = _themeService.surfaceColor;
+    final textColor = _themeService.textColor;
+    final textColorSecondary = _themeService.textColorSecondary;
+    final isDarkMode = _themeService.isDark;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -113,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               border: Border.all(color: primaryColor, width: 2),
                               image: const DecorationImage(
                                 image: NetworkImage(
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuAAI8Re_CwwCDJEGbBeDP-KUV0H7mVnGNWiflBoentt3u-h-599mwP37a5Hm_qxrybJuQ00FvoZkBl9s4k9MxdTtBJQO6DNEujnIbp60jBKbYZ9MLjg05bMP00MpnXpxHKWifSR8vk4B8dDgd3TcSRKSe-iJqOfw8pX03nYwdukxPyhF_VAc9L54zcVb58oBsn-iSHr_2qetsB2zajxRP-TQUA8Sgfmdi03zhNEruOdgu4QQyk7OE27GEJh4j6slcWXoj8gIAMlsAg',
+                                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop',
                                 ),
                                 fit: BoxFit.cover,
                               ),
@@ -127,7 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Row(
                                   children: [
                                     Text(
-                                      'Alex Doe',
+                                      'Ahmad',
                                       style: GoogleFonts.manrope(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -158,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ],
                                 ),
                                 Text(
-                                  'alex.doe@example.com',
+                                  'ahmad@example.com',
                                   style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     color: textColorSecondary,
@@ -167,39 +164,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.sentiment_satisfied,
-                                    size: 16,
-                                    color: primaryColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Calm',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                'Avg. Mood',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 10,
-                                  color: textColorSecondary.withOpacity(0.7),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+
+                    // Theme Section
+                    _buildSectionHeader('VISUAL THEME', textColorSecondary),
+                    _buildSettingsGroup([
+                      _buildThemeSelector(cardColor, textColor, primaryColor),
+                    ], cardColor),
                     const SizedBox(height: 24),
 
                     // AI & Personalization
@@ -228,40 +202,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         textColor,
                         textColorSecondary,
                       ),
-                      _buildSliderItem(
-                        'Font Size',
-                        Icons.format_size,
-                        _fontSize,
-                        (val) => setState(() => _fontSize = val),
-                        primaryColor,
-                        textColor,
-                        textColorSecondary,
-                      ),
-                    ], cardColor),
-                    const SizedBox(height: 24),
-
-                    // Privacy & Security
-                    _buildSectionHeader(
-                      'PRIVACY & SECURITY',
-                      textColorSecondary,
-                    ),
-                    _buildSettingsGroup([
-                      _buildNavigationItem(
-                        'Biometric Lock',
-                        Icons.face,
-                        Colors.blue,
-                        'FaceID',
-                        textColor,
-                        textColorSecondary,
-                      ),
-                      _buildNavigationItem(
-                        'Data & Privacy Controls',
-                        Icons.lock,
-                        Colors.grey,
-                        '',
-                        textColor,
-                        textColorSecondary,
-                      ),
                     ], cardColor),
                     const SizedBox(height: 24),
 
@@ -275,36 +215,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _dailyReminder,
                         (val) => setState(() => _dailyReminder = val),
                         Colors.red,
-                        textColor,
-                        textColorSecondary,
-                      ),
-                      _buildNavigationItem(
-                        'Reminder Time',
-                        Icons.schedule,
-                        Colors.indigo,
-                        '8:00 PM',
-                        textColor,
-                        textColorSecondary,
-                      ),
-                    ], cardColor),
-                    const SizedBox(height: 24),
-
-                    // Data
-                    _buildSectionHeader('DATA', textColorSecondary),
-                    _buildSettingsGroup([
-                      _buildNavigationItem(
-                        'Backup to Cloud',
-                        Icons.cloud_upload,
-                        Colors.orange,
-                        'Last backup: 2 days ago',
-                        textColor,
-                        textColorSecondary,
-                      ),
-                      _buildNavigationItem(
-                        'Export Journal Entries',
-                        Icons.ios_share,
-                        const Color(0xFF059669), // Emerald 600
-                        '',
                         textColor,
                         textColorSecondary,
                       ),
@@ -339,7 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Smart Journal AI v2.4.1 (Build 890)',
+                            'MindTrack AI v2.5.0',
                             style: GoogleFonts.manrope(
                               fontSize: 12,
                               color: textColorSecondary.withOpacity(0.5),
@@ -351,6 +261,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 32),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeSelector(
+    Color cardColor,
+    Color textColor,
+    Color primaryColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.style, size: 20, color: primaryColor),
+              const SizedBox(width: 12),
+              Text(
+                'Choose Theme',
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth - 24) / 2;
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _themeOption(
+                    AppThemeMode.blueBlack,
+                    'Blue - Dark',
+                    const Color(0xFF3B82F6),
+                    const Color(0xFF0F172A),
+                    itemWidth,
+                  ),
+                  _themeOption(
+                    AppThemeMode.greenBlack,
+                    'Green - Dark',
+                    const Color(0xFF13EC5B),
+                    const Color(0xFF102216),
+                    itemWidth,
+                  ),
+                  _themeOption(
+                    AppThemeMode.blueWhite,
+                    'Blue - Light',
+                    const Color(0xFF3B82F6),
+                    Colors.white,
+                    itemWidth,
+                  ),
+                  _themeOption(
+                    AppThemeMode.greenWhite,
+                    'Green - Light',
+                    const Color(0xFF13EC5B),
+                    Colors.white,
+                    itemWidth,
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _themeOption(
+    AppThemeMode mode,
+    String label,
+    Color primary,
+    Color bg,
+    double width,
+  ) {
+    final isSelected = _themeService.themeNotifier.value == mode;
+    return GestureDetector(
+      onTap: () {
+        _themeService.setTheme(mode);
+        setState(() {});
+      },
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? primary.withOpacity(0.1) : bg.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? primary : Colors.white.withOpacity(0.1),
+            width: 2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: bg,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: _themeService.textColor,
               ),
             ),
           ],
@@ -450,144 +492,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF13EC5B),
+            activeColor: _themeService.primaryColor,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSliderItem(
-    String title,
-    IconData icon,
-    double value,
-    Function(double) onChanged,
-    Color iconColor,
-    Color textColor,
-    Color textColorSecondary,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, size: 20, color: iconColor),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '${value.toInt()}px',
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  color: textColorSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                'A',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: textColorSecondary,
-                ),
-              ),
-              Expanded(
-                child: Slider(
-                  value: value,
-                  min: 12,
-                  max: 24,
-                  divisions: 12,
-                  onChanged: onChanged,
-                  activeColor: iconColor,
-                ),
-              ),
-              Text(
-                'A',
-                style: GoogleFonts.manrope(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: textColorSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationItem(
-    String title,
-    IconData icon,
-    Color iconColor,
-    String trailingText,
-    Color textColor,
-    Color textColorSecondary,
-  ) {
-    return InkWell(
-      onTap: () {},
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: iconColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: 20, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-            ),
-            if (trailingText.isNotEmpty)
-              Text(
-                trailingText,
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  color: textColorSecondary,
-                ),
-              ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: textColorSecondary.withOpacity(0.5),
-            ),
-          ],
-        ),
       ),
     );
   }
