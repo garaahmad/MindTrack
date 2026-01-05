@@ -16,6 +16,7 @@ android {
     ndkVersion = "27.3.13750724"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         // استخدام Java 17 لحل مشكلة فشل البناء السابقة
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -40,7 +41,6 @@ android {
 
     buildTypes {
         release {
-            // استخدام توقيع debug لتسهيل التثبيت المباشر دون متجر حالياً
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
@@ -50,4 +50,7 @@ android {
 
 flutter {
     source = "../.."
+}
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

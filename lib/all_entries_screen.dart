@@ -23,7 +23,6 @@ class AllEntriesScreen extends StatelessWidget {
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // Background Glow
           Positioned(
             top: -100,
             left: -50,

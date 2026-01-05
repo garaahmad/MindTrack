@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'mood_history_screen.dart';
 
 class OnboardingData {
   final String title;
@@ -58,12 +59,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     final List<OnboardingData> pages = [
       OnboardingData(
-        title: 'Your Mood, ',
-        highlightedTitle: 'Decoded.',
+        title: 'Track Your ',
+        highlightedTitle: 'Habits.',
         subtitle:
-            'Simply write about your day. Our AI understands your sentiment and adapts the app to match your vibe.',
+            'Build better routines with our daily habit tracker. Stay committed and watch your progress grow day by day.',
         imageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuDin_drABYUdmXjz_7vYCl-a9BSDlH21ssJ2U_u0BJjE8UfhbvVnNyi78G6vv5tWG5wVlWgxRtDDOTxQxvVFfBx4JZzS-20PDroror6AkCSFyRoWTxtKdP7gO4GAPwfT994DNSUHwIk5_1nV8qj6SY2dF92kPEj8XQUP-huoycGI_REn2NACAtcqmFR6w5iJJ26wXkRRle3s93t9JPuyxDsz8OtUAN0i9yPkY6VHVcXDuQqPhMHmuST3DndbNd0Uy83SNx4siMsylg',
+            'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&q=80&w=1000',
       ),
       OnboardingData(
         title: 'Visualize Your ',
@@ -280,19 +281,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const SizedBox(height: 32),
                   // CTA Button
                   InkWell(
-                    onTap: () {
+                    onTap: () async {
                       if (_currentPage < pages.length - 1) {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 500),
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('is_onboarded', true);
+                        // Assuming that completing onboarding also means the user is "logged in" for the first time
+                        await prefs.setBool('is_logged_in', true);
+                        if (mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MoodHistoryScreen(),
+                            ),
+                          );
+                        }
                       }
                     },
                     borderRadius: BorderRadius.circular(16),

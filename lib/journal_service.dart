@@ -1,4 +1,5 @@
-import 'dart:math';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class JournalEntry {
   final String id;
@@ -11,7 +12,7 @@ class JournalEntry {
   final DateTime timestamp;
 
   JournalEntry({
-    this.id = '',
+    required this.id,
     required this.date,
     required this.time,
     required this.content,
@@ -20,43 +21,65 @@ class JournalEntry {
     required this.sentimentScore,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'date': date,
+    'time': time,
+    'content': content,
+    'mood': mood,
+    'insight': insight,
+    'sentimentScore': sentimentScore,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory JournalEntry.fromJson(Map<String, dynamic> json) => JournalEntry(
+    id: json['id'],
+    date: json['date'],
+    time: json['time'],
+    content: json['content'],
+    mood: json['mood'],
+    insight: json['insight'],
+    sentimentScore: json['sentimentScore'],
+    timestamp: DateTime.parse(json['timestamp']),
+  );
 }
 
 class JournalService {
   static final JournalService _instance = JournalService._internal();
   factory JournalService() => _instance;
 
-  JournalService._internal() {
-    // Better dummy data for testing
-    _localEntries = [
-      JournalEntry(
-        date: 'Dec 22, 2025',
-        time: '10:00 AM',
-        content: 'Productive day, feels good.',
-        mood: 'Accomplished',
-        insight: 'Keep this momentum.',
-        sentimentScore: 0.8,
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      JournalEntry(
-        date: 'Dec 21, 2025',
-        time: '08:30 PM',
-        content: 'A bit slow today.',
-        mood: 'Reflective',
-        insight: 'It is okay to rest.',
-        sentimentScore: 0.5,
-        timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-    ];
-  }
+  JournalService._internal();
 
   List<JournalEntry> _localEntries = [];
   List<JournalEntry> get entries => List.unmodifiable(_localEntries);
 
-  Future<void> syncEntries() async => null;
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? entriesJson = prefs.getString('journal_entries');
+    if (entriesJson != null) {
+      final List<dynamic> decoded = jsonDecode(entriesJson);
+      _localEntries = decoded
+          .map((item) => JournalEntry.fromJson(item))
+          .toList();
+    }
+  }
+
+  Future<void> _saveEntries() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encoded = jsonEncode(
+      _localEntries.map((e) => e.toJson()).toList(),
+    );
+    await prefs.setString('journal_entries', encoded);
+  }
+
+  Future<void> syncEntries() async {
+    // No-op for now as we use local storage
+  }
 
   Future<void> addEntry(JournalEntry entry) async {
     _localEntries.insert(0, entry);
+    await _saveEntries();
   }
 
   double? getMoodForDay(DateTime day) {
@@ -86,7 +109,7 @@ class JournalService {
       ).subtract(Duration(days: i));
       double? score = getMoodForDay(day);
 
-      // If no score, use 0.5 as middle ground baseline
+      // Default to 0.5 (neutral) if no data, so drops to 0.1 are visible
       weeklyScores.add(score ?? 0.5);
     }
     return weeklyScores;
@@ -97,18 +120,15 @@ class JournalService {
     if (scores.length < 2) return 0;
 
     double today = scores.last;
-    double baseline = 0.5; // Use 0.5 as the "neutral" baseline for comparison
 
-    // Find average of the previous 6 days
+    // Calculate average of previous 6 days
     double previousSum = 0;
     for (int i = 0; i < 6; i++) previousSum += scores[i];
     double previousAvg = previousSum / 6;
 
-    // Calculate change from the weekly average
-    if (previousAvg == 0) return 0;
+    if (previousAvg == 0) return today > 0 ? 100 : 0;
     double change = ((today - previousAvg) / previousAvg) * 100;
 
-    // Clamp to avoid crazy numbers from small denominators
     return change.clamp(-100, 100);
   }
 }

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'journal_entry_screen.dart';
 import 'settings_screen.dart';
-import 'ai_chat_screen.dart';
+import 'habits_screen.dart';
 import 'all_entries_screen.dart';
 import 'explore_screen.dart';
 import 'journal_service.dart';
 import 'theme_service.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
+import 'habit_service.dart';
 
 class MoodHistoryScreen extends StatefulWidget {
   const MoodHistoryScreen({Key? key}) : super(key: key);
@@ -31,6 +32,48 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
     if (mounted) setState(() {});
   }
 
+  List<double> _getCombinedScores() {
+    final journalService = JournalService();
+    final habitService = HabitService();
+    final moodScores = journalService.getWeeklyScores();
+    final habitRate = habitService.getDailyCompletionRate();
+    final hasHabits = habitService.habits.isNotEmpty;
+    final hasEntryToday = journalService.getMoodForDay(DateTime.now()) != null;
+
+    List<double> combined = List.from(moodScores);
+
+    if (combined.isNotEmpty) {
+      double todayBase;
+      if (!hasEntryToday) {
+        // If no entry, start at neutral 0.5
+        todayBase = 0.5;
+        // If they have habits and completed some, increase it
+        if (hasHabits) {
+          todayBase += (habitRate * 0.4); // can go up to 0.9
+        }
+      } else {
+        // Has entry, blend mood with habit progress
+        double moodScore = moodScores.last;
+        if (hasHabits) {
+          todayBase = (moodScore + (0.5 + (habitRate * 0.5))) / 2;
+        } else {
+          todayBase = moodScore;
+        }
+      }
+      combined[combined.length - 1] = todayBase;
+    }
+
+    return combined;
+  }
+
+  String _getMoodStatus(double score) {
+    if (score >= 0.7) return 'Positive';
+    if (score >= 0.55) return 'Elevated';
+    if (score >= 0.45) return 'Steady';
+    if (score >= 0.3) return 'Lowered';
+    return 'Challenging';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<AppThemeMode>(
@@ -41,105 +84,95 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
         final surfaceColor = _themeService.surfaceColor;
         final textColor = _themeService.textColor;
         final textColorSecondary = _themeService.textColorSecondary;
-        final isDarkMode = _themeService.isDark;
 
         return Scaffold(
           backgroundColor: backgroundColor,
-          body: Stack(
-            children: [
-              SafeArea(
-                child: RefreshIndicator(
-                  color: primaryColor,
-                  backgroundColor: surfaceColor,
-                  onRefresh: () async {
-                    await JournalService().syncEntries();
-                    if (mounted) setState(() {});
-                  },
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 100),
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const SizedBox(width: 48),
-                                Text(
-                                  'Mood History',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: textColor,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {},
-                                  icon: Icon(
-                                    Icons.filter_list,
-                                    color: textColorSecondary,
-                                  ),
-                                ),
-                              ],
+          extendBody: true,
+          body: SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
+              color: primaryColor,
+              backgroundColor: surfaceColor,
+              onRefresh: () async {
+                await JournalService().syncEntries();
+                if (mounted) setState(() {});
+              },
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 120),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const SizedBox(width: 48),
+                            Text(
+                              'Mood History',
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
                             ),
-                          ),
-
-                          // Average Mood & Graph
-                          _buildMoodGraph(
-                            context,
-                            primaryColor,
-                            textColor,
-                            textColorSecondary,
-                            surfaceColor,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Mood Calendar
-                          _buildCalendar(
-                            context,
-                            primaryColor,
-                            textColor,
-                            textColorSecondary,
-                            surfaceColor,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Recent Entries
-                          _buildRecentEntries(
-                            context,
-                            primaryColor,
-                            textColor,
-                            textColorSecondary,
-                            surfaceColor,
-                          ),
-                        ],
+                            IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.filter_list,
+                                color: textColorSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+
+                      // Average Mood & Graph
+                      _buildMoodGraph(
+                        context,
+                        primaryColor,
+                        textColor,
+                        textColorSecondary,
+                        surfaceColor,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Mood Calendar
+                      _buildCalendar(
+                        context,
+                        primaryColor,
+                        textColor,
+                        textColorSecondary,
+                        surfaceColor,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Recent Entries
+                      _buildRecentEntries(
+                        context,
+                        primaryColor,
+                        textColor,
+                        textColorSecondary,
+                        surfaceColor,
+                      ),
+                    ],
                   ),
                 ),
               ),
-
-              // Bottom Navigation
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: _buildBottomNav(
-                  context,
-                  primaryColor,
-                  surfaceColor,
-                  textColor,
-                  textColorSecondary,
-                ),
-              ),
-            ],
+            ),
+          ),
+          bottomNavigationBar: _buildBottomNav(
+            context,
+            primaryColor,
+            surfaceColor,
+            textColor,
+            textColorSecondary,
           ),
         );
       },
@@ -171,7 +204,7 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
                   ),
                 ),
                 Text(
-                  'Elevated',
+                  _getMoodStatus(_getCombinedScores().last),
                   style: GoogleFonts.manrope(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -182,7 +215,20 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
             ),
             Builder(
               builder: (context) {
-                final percentage = JournalService().getPercentageChange();
+                final scores = _getCombinedScores();
+                if (scores.length < 2) return const SizedBox();
+
+                final double today = scores.last;
+                double previousSum = 0;
+                for (int i = 0; i < scores.length - 1; i++)
+                  previousSum += scores[i];
+                double previousAvg = previousSum / (scores.length - 1);
+
+                double percentage = 0;
+                if (previousAvg != 0) {
+                  percentage = ((today - previousAvg) / previousAvg) * 100;
+                }
+
                 final bool isPositive = percentage >= 0;
                 final color = isPositive ? primaryColor : Colors.redAccent;
 
@@ -235,10 +281,7 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
           child: Stack(
             children: [
               CustomPaint(
-                painter: WaveGraphPainter(
-                  primaryColor,
-                  JournalService().getWeeklyScores(),
-                ),
+                painter: WaveGraphPainter(textColor, _getCombinedScores()),
                 size: const Size(double.infinity, 180),
               ),
               Positioned(
@@ -278,11 +321,6 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
     Color surfaceColor,
   ) {
     final now = DateTime.now();
-    final firstDayOfMonth = DateTime(now.year, now.month, 1);
-    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
-    final daysInMonth = lastDayOfMonth.day;
-    final startWeekday =
-        firstDayOfMonth.weekday % 7; // Sunday = 0, Monday = 1...
 
     return Column(
       children: [
@@ -335,41 +373,10 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-                    .map(
-                      (day) => Expanded(
-                        child: Center(
-                          child: Text(
-                            day,
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: textColorSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 8,
-                ),
-                itemCount: daysInMonth + startWeekday,
-                itemBuilder: (context, index) {
-                  if (index < startWeekday) return const SizedBox();
-
-                  final dayNum = index - startWeekday + 1;
-                  final date = DateTime(now.year, now.month, dayNum);
-                  final isToday = dayNum == now.day;
-
-                  final moodScore = JournalService().getMoodForDay(date);
+                children: List.generate(7, (index) {
+                  final day = now.subtract(Duration(days: 6 - index));
+                  final isToday = day.day == now.day && day.month == now.month;
+                  final moodScore = JournalService().getMoodForDay(day);
 
                   Color? boxColor;
                   Color? dayTextColor;
@@ -390,28 +397,45 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
                     dayTextColor = textColor.withOpacity(0.6);
                   }
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: boxColor,
-                      borderRadius: BorderRadius.circular(8),
-                      border: isToday
-                          ? Border.all(color: primaryColor, width: 2)
-                          : null,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$dayNum',
-                        style: GoogleFonts.manrope(
-                          fontSize: 14,
-                          fontWeight: isToday
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: dayTextColor,
+                  return Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          DateFormat('E').format(day)[0],
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: textColorSecondary,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 40,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: boxColor,
+                            borderRadius: BorderRadius.circular(8),
+                            border: isToday
+                                ? Border.all(color: primaryColor, width: 2)
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${day.day}',
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: isToday
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: dayTextColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   );
-                },
+                }),
               ),
             ],
           ),
@@ -468,6 +492,7 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
                   entry.timestamp.month == now.month &&
                   entry.timestamp.day == now.day;
             })
+            .take(5)
             .map((entry) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
@@ -585,74 +610,99 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
     Color textColorSecondary,
   ) {
     return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: surfaceColor.withOpacity(0.95),
-        border: Border(top: BorderSide(color: textColor.withOpacity(0.05))),
-      ),
+      height: 100, // Increased to accommodate safe area and FAB
+      color: Colors.transparent, // Make it transparent to see FAB overlapping
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ExploreScreen(),
-                    ),
-                  );
-                },
-                child: _buildNavItem(
-                  Icons.explore,
-                  'Explore',
-                  textColorSecondary,
-                ),
-              ),
-              _buildNavItem(
-                Icons.bar_chart,
-                'History',
-                textColor,
-                isSelected: true,
-                primaryColor: primaryColor,
-              ),
-              const SizedBox(width: 48), // Space for FAB
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AIChatScreen(),
-                    ),
-                  );
-                },
-                child: _buildNavItem(
-                  Icons.chat_bubble,
-                  'AI Chat',
-                  textColorSecondary,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
-                    ),
-                  );
-                },
-                child: _buildNavItem(
-                  Icons.settings,
-                  'Settings',
-                  textColorSecondary,
-                ),
-              ),
-            ],
-          ),
           Positioned(
-            top: -24,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 80 + MediaQuery.of(context).padding.bottom,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).padding.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: surfaceColor.withOpacity(0.95),
+                border: Border(
+                  top: BorderSide(color: textColor.withOpacity(0.05)),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ExploreScreen(),
+                        ),
+                      ).then((_) {
+                        if (mounted) setState(() {});
+                      });
+                    },
+                    child: _buildNavItem(
+                      Icons.explore,
+                      'Explore',
+                      textColorSecondary,
+                    ),
+                  ),
+                  _buildNavItem(
+                    Icons.bar_chart,
+                    'History',
+                    textColor,
+                    isSelected: true,
+                    primaryColor: primaryColor,
+                  ),
+                  const SizedBox(width: 48), // Space for FAB
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HabitsScreen(),
+                        ),
+                      ).then((_) {
+                        if (mounted) setState(() {});
+                      });
+                    },
+                    child: _buildNavItem(
+                      Icons.check_circle_outline,
+                      'Habits',
+                      textColorSecondary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      ).then((_) {
+                        if (mounted) setState(() {});
+                      });
+                    },
+                    child: _buildNavItem(
+                      Icons.settings,
+                      'Settings',
+                      textColorSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // FAB
+          Positioned(
+            bottom:
+                40 +
+                MediaQuery.of(
+                  context,
+                ).padding.bottom, // Adjusted based on bar height
             left: MediaQuery.of(context).size.width / 2 - 28,
             child: GestureDetector(
               onTap: () {

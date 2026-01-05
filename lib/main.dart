@@ -1,23 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
+import 'login_screen.dart';
+import 'mood_history_screen.dart';
 import 'theme_service.dart';
+import 'journal_service.dart';
+import 'habit_service.dart';
+import 'notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize ThemeService
   final themeService = ThemeService();
   await themeService.init();
 
-  // Gemini init (existing)
-  Gemini.init(apiKey: 'API--- Don/t use my API');
+  final journalService = JournalService();
+  await journalService.init();
 
-  runApp(const MyApp());
+  final habitService = HabitService();
+  await habitService.init();
+
+  final notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.scheduleDailyReminders();
+
+  final prefs = await SharedPreferences.getInstance();
+  final bool isOnboarded = prefs.getBool('is_onboarded') ?? false;
+  final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+
+  Widget home;
+  if (!isOnboarded) {
+    home = const OnboardingScreen();
+  } else if (!isLoggedIn) {
+    home = const LoginScreen();
+  } else {
+    home = const MoodHistoryScreen();
+  }
+
+  runApp(MyApp(home: home));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Widget home;
+  const MyApp({super.key, required this.home});
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +65,12 @@ class MyApp extends StatelessWidget {
               brightness: themeService.isDark
                   ? Brightness.dark
                   : Brightness.light,
-              background: themeService.backgroundColor,
               surface: themeService.surfaceColor,
             ),
             useMaterial3: true,
           ),
           themeMode: themeService.isDark ? ThemeMode.dark : ThemeMode.light,
-          home: const OnboardingScreen(),
+          home: home,
         );
       },
     );

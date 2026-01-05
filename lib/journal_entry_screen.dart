@@ -459,6 +459,7 @@ class AnalysisResultSheet extends StatelessWidget {
               final now = DateTime.now();
               JournalService().addEntry(
                 JournalEntry(
+                  id: now.millisecondsSinceEpoch.toString(),
                   date: DateFormat('MMM dd, yyyy').format(now),
                   time: DateFormat('hh:mm a').format(now),
                   content: entryContent,

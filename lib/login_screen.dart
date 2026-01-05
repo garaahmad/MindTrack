@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'mood_history_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -19,13 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       // Temporary bypass for testing
       await Future.delayed(const Duration(seconds: 1)); // Simulate short delay
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MoodHistoryScreen()),
-        );
-      }
-    } catch (e) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', true);
       if (mounted) {
         Navigator.pushReplacement(
           context,
