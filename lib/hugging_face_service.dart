@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class HuggingFaceService {
-  final String _apiKey = "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";
+  final String _apiKey = "YOUR_HUGGINGFACE_TOKEN";
   final String _apiUrl = "https://router.huggingface.co/v1/chat/completions";
 
   Future<Map<String, dynamic>> analyzeEntry(String text) async {
